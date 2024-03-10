@@ -66,6 +66,7 @@ gha ()
 {
   if ! TOKEN=$(echo "" | openssl enc -aes-256-cbc -a -d -pbkdf2 ); then echo "Error encoding token"; return 1; fi
   NAME="runner-$1"
+  LABEL=${2:-"ubuntu-latest"}
   IMAGE_HASH=$(docker image inspect rusefi-ci --format "{{.Id}}" 2>/dev/null)
   if CONTAINER_HASH=$(docker container inspect $NAME --format "{{.Image}}" 2>/dev/null) && [ "$IMAGE_HASH" = "$CONTAINER_HASH" ]; then
     docker start -i "$NAME"
@@ -73,7 +74,10 @@ gha ()
     if docker container inspect "$NAME" >/dev/null 2>/dev/null; then
       docker rm "$NAME"
     fi
-    docker run -it --privileged -e RUNNER_NAME="$NAME" -e RUNNER_LABELS=ubuntu-latest -e GITHUB_ACCESS_TOKEN="$TOKEN" -e RUNNER_REPOSITORY_URL=https://github.com/<github user>/rusefi --name $NAME rusefi-ci
+    if [ -n "$3" ]; then
+      MOUNT="-v $PWD/$3:/opt/actions-runner/rusefi-env:ro"
+    fi
+    docker run -it --privileged $MOUNT -e RUNNER_NAME="$NAME" -e RUNNER_LABELS="$LABEL" -e GITHUB_ACCESS_TOKEN="$TOKEN" -e RUNNER_REPOSITORY_URL=https://github.com/chuckwagoncomputing/rusefi --name $NAME rusefi-ci
   fi
 }
 ```
@@ -88,3 +92,11 @@ After you have run `ghatoken`, you can now start runners with `gha <id>`. I use 
 but you may name them however you like.
 
 Note that these helper functions start the runner in interactive mode. If you prefer, you can remove the `-i` in `docker start -i` and replace the `-it` in `docker run -it` with `--detach`.
+
+## udev Rules for Hardware CI
+
+On your host machine, you need to make your board and ST-Link owned by the docker group
+```
+SUBSYSTEM=="tty", ATTRS{serial}=="24001D001247393338343537", GROUP="docker"
+SUBSYSTEM=="usb", ATTRS{serial}=="066CFF3834344E5043242446", GROUP="docker"
+```
