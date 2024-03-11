@@ -87,7 +87,7 @@ RUN groupadd docker -g $GID &&\
     update-alternatives --set java /usr/lib/jvm/temurin-11-jdk-amd64/bin/java
 
 # Install Docker CLI
-RUN curl -fsSL https://get.docker.com -o- | sh && \
+RUN curl -fsSL https://get.docker.com -o- | sh -s -- --version 24 && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 
