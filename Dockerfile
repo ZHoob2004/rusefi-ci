@@ -91,11 +91,6 @@ RUN curl -fsSL https://get.docker.com -o- | sh -s -- --version 24 && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 
-# Install Docker-Compose
-RUN curl -L -o /usr/local/bin/docker-compose \
-    "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" && \
-    chmod +x /usr/local/bin/docker-compose
-
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 RUN chmod 644 /etc/supervisor/conf.d/supervisord.conf
 
