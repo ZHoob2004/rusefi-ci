@@ -89,14 +89,31 @@ Once the functions are in your .bashrc, and you have sourced your .bashrc, by op
 run `ghatoken`, paste in your PAT, and enter a password. This password will be used every time you start a runner.
 
 After you have run `ghatoken`, you can now start runners with `gha <id>`. I use sequential ids, e.g. `gha 1`, `gha 2`, etc,
-but you may name them however you like.
+but you may name them however you like. You can also pass a label, or multiple labels separated with a comma, as the second option. If omitted, `ubuntu-latest` will be used.
 
 Note that these helper functions start the runner in interactive mode. If you prefer, you can remove the `-i` in `docker start -i` and replace the `-it` in `docker run -it` with `--detach`.
 
-## udev Rules for Hardware CI
+## Hardware CI
 
-On your host machine, you need to make your board and ST-Link owned by the docker group
+### udev Rules
+
+_Assuming your host is Linux_
+
+On your host machine, you need to make your board and ST-Link owned by the docker group.
+Place this in /etc/udev/rules.d/70-rusefi.rules, replacing the serials with those of your board and ST-Link respectively.
 ```
 SUBSYSTEM=="tty", ATTRS{serial}=="24001D001247393338343537", GROUP="docker"
 SUBSYSTEM=="usb", ATTRS{serial}=="066CFF3834344E5043242446", GROUP="docker"
 ```
+
+### Configuring Runner
+
+Prepare a file with the serial numbers of your hardware, like this one:
+```
+HARDWARE_CI_SERIAL=24001D001247393338343537
+HARDWARE_CI_STLINK_SERIAL=066CFF3834344E5043242446
+HARDWARE_CI_VBATT=12
+```
+
+Now when you first create your runner, you can pass this file as the third option on the command line.  
+`gha f407-discovery hw-ci-f4-discovery rusefi-env`
