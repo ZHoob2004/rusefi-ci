@@ -101,18 +101,47 @@ _Assuming your host is Linux_
 
 On your host machine, you need to make your board and ST-Link owned by the docker group.
 Place this in /etc/udev/rules.d/70-rusefi.rules, replacing the serials with those of your board and ST-Link respectively.
+
 ```
 SUBSYSTEM=="tty", ATTRS{serial}=="24001D001247393338343537", GROUP="docker"
 SUBSYSTEM=="usb", ATTRS{serial}=="066CFF3834344E5043242446", GROUP="docker"
 ```
 
+If you have a ST-Link with binary data in the serial, it needs some special treatment. If you only have one, you can use the Product ID for the udev rule instead of the serial:
+
+```
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="3748", GROUP="docker"
+```
+
+You can get these values by running `lsusb` and looking for your ST-Link.
+
+If you have more than one ST-Link with a binary serial, things get more complicated. Paste this into a file somewhere:
+
+```
+tr -cs '\000-\177' '?' </sys/bus/usb/devices/$1/serial | grep -o . | while read l; do printf '\\x%02X' \"$l; done
+```
+
+Now we will make udev call that script, and compare the result to your serial. Change `/opt/getserial.sh` to the path where you stored the file. Replace the example serial in RESULT below with your serial.
+[Gethla](https://github.com/a-v-s/gethla) can automatically find your device and give you the fully escaped serial.
+
+```
+SUBSYSTEM=="usb", PROGRAM="/bin/sh /opt/getserial.sh %k" RESULT=="\x49\x3F\x6A\x06\x48\x3F\x54\x53\x25\x50\x10\x3F", GROUP="docker"
+```
+
 ### Configuring Runner
 
 Prepare a file with the serial numbers of your hardware, like this one:
+
 ```
 HARDWARE_CI_SERIAL=24001D001247393338343537
 HARDWARE_CI_STLINK_SERIAL=066CFF3834344E5043242446
 HARDWARE_CI_VBATT=12
+```
+
+If you have a ST-Link with binary data in the serial, use the escaped serial from gethla as described above, and wrap it in quotes. For example:
+
+```
+HARDWARE_CI_STLINK_SERIAL='\x49\x3F\x6A\x06\x48\x3F\x54\x53\x25\x50\x10\x3F'
 ```
 
 Now when you first create your runner, you can pass this file as the third option on the command line.  
